@@ -31,6 +31,11 @@ func NewDecoder(r io.Reader) *Decoder {
 	return &Decoder{r: r}
 }
 
+// SetNetjsonDecoder sets the NetjsonDecoder to use for decoding channels.
+func (dec *Decoder) SetNetjsonDecoder(netjsonDec NetjsonDecoder) {
+	dec.d.netjsonDec = netjsonDec
+}
+
 // UseNumber causes the Decoder to unmarshal a number into an interface{} as a
 // Number instead of as a float64.
 func (dec *Decoder) UseNumber() { dec.d.useNumber = true }
@@ -173,11 +178,18 @@ type Encoder struct {
 	indentBuf    *bytes.Buffer
 	indentPrefix string
 	indentValue  string
+
+	netjsonEnc NetjsonEncoder
 }
 
 // NewEncoder returns a new encoder that writes to w.
 func NewEncoder(w io.Writer) *Encoder {
 	return &Encoder{w: w, escapeHTML: true}
+}
+
+// SetNetjsonEncoder sets the NetjsonEncoder to use for encoding channels.
+func (enc *Encoder) SetNetjsonEncoder(netjsonEnc NetjsonEncoder) {
+	enc.netjsonEnc = netjsonEnc
 }
 
 // Encode writes the JSON encoding of v to the stream,
@@ -190,6 +202,7 @@ func (enc *Encoder) Encode(v interface{}) error {
 		return enc.err
 	}
 	e := newEncodeState()
+	e.netjsonEnc = enc.netjsonEnc
 	err := e.marshal(v, encOpts{escapeHTML: enc.escapeHTML})
 	if err != nil {
 		return err

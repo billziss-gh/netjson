@@ -165,6 +165,17 @@ func Marshal(v interface{}) ([]byte, error) {
 	return e.Bytes(), nil
 }
 
+// MarshalWithEncoder returns the JSON encoding of v, but also supports
+// encoding using the passed NetjsonEncoder.
+func MarshalWithEncoder(v interface{}, netjsonEnc NetjsonEncoder) ([]byte, error) {
+	e := &encodeState{netjsonEnc: netjsonEnc}
+	err := e.marshal(v, encOpts{escapeHTML: true})
+	if err != nil {
+		return nil, err
+	}
+	return e.Bytes(), nil
+}
+
 // MarshalIndent is like Marshal but applies Indent to format the output.
 func MarshalIndent(v interface{}, prefix, indent string) ([]byte, error) {
 	b, err := Marshal(v)
@@ -268,6 +279,7 @@ var hex = "0123456789abcdef"
 type encodeState struct {
 	bytes.Buffer // accumulated output
 	scratch      [64]byte
+	netjsonEnc   NetjsonEncoder
 }
 
 var encodeStatePool sync.Pool
@@ -429,6 +441,8 @@ func newTypeEncoder(t reflect.Type, allowAddr bool) encoderFunc {
 		return newArrayEncoder(t)
 	case reflect.Ptr:
 		return newPtrEncoder(t)
+	case reflect.Chan:
+		return netjsonEncoder
 	default:
 		return unsupportedTypeEncoder
 	}

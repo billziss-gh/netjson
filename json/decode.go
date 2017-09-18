@@ -104,6 +104,21 @@ func Unmarshal(data []byte, v interface{}) error {
 	return d.unmarshal(v)
 }
 
+// Unmarshal parses the JSON-encoded data and stores the result
+// in the value pointed to by v, but also supports decoding using
+// the passed NetjsonDecoder.
+func UnmarshalWithDecoder(data []byte, v interface{}, netjsonDec NetjsonDecoder) error {
+	var d decodeState
+	d.netjsonDec = netjsonDec
+	err := checkValid(data, &d.scan)
+	if err != nil {
+		return err
+	}
+
+	d.init(data)
+	return d.unmarshal(v)
+}
+
 // Unmarshaler is the interface implemented by types
 // that can unmarshal a JSON description of themselves.
 // The input can be assumed to be a valid encoding of
@@ -273,6 +288,7 @@ type decodeState struct {
 	}
 	savedError error
 	useNumber  bool
+	netjsonDec NetjsonDecoder
 }
 
 // errPhase is used for errors that should not happen unless
@@ -940,6 +956,8 @@ func (d *decodeState) literalStore(item []byte, v reflect.Value, fromQuoted bool
 			} else {
 				d.saveError(&UnmarshalTypeError{Value: "string", Type: v.Type(), Offset: int64(d.off)})
 			}
+		case reflect.Chan:
+			netjsonDecoder(d, s, v)
 		}
 
 	default: // number
