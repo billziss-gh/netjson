@@ -16,7 +16,7 @@ import (
 type NetjsonEncoder interface {
 	// NetjsonEncode returns a byte slice representing the encoding of the
 	// passed channel.
-	NetjsonEncode(interface{}) ([]byte, error)
+	NetjsonEncode(reflect.Value) ([]byte, error)
 }
 
 // NetjsonDecoder is the interface used to decode channels.
@@ -25,7 +25,7 @@ type NetjsonEncoder interface {
 type NetjsonDecoder interface {
 	// NetjsonDecode overwrites the passed channel, which must be a pointer,
 	// with the value represented by the byte slice.
-	NetjsonDecode(interface{}, []byte) error
+	NetjsonDecode(reflect.Value, []byte) error
 }
 
 func netjsonEncoder(e *encodeState, v reflect.Value, opts encOpts) {
@@ -33,7 +33,7 @@ func netjsonEncoder(e *encodeState, v reflect.Value, opts encOpts) {
 		e.error(&UnsupportedTypeError{v.Type()})
 		return
 	}
-	buf, err := e.netjsonEnc.NetjsonEncode(v.Interface())
+	buf, err := e.netjsonEnc.NetjsonEncode(v)
 	if err == nil {
 		n := base64.RawURLEncoding.EncodedLen(len(buf)) +
 			len(netjsonChanQPrefix) + len(netjsonChanQSuffix)
@@ -58,7 +58,7 @@ func netjsonDecoder(d *decodeState, s []byte, v reflect.Value) {
 	buf := make([]byte, base64.RawURLEncoding.DecodedLen(len(s)))
 	n, err := base64.RawURLEncoding.Decode(buf, s)
 	if err == nil {
-		err = d.netjsonDec.NetjsonDecode(v.Addr().Interface(), buf[:n])
+		err = d.netjsonDec.NetjsonDecode(v.Addr(), buf[:n])
 	}
 	if err != nil {
 		d.saveError(err)

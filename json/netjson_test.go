@@ -13,12 +13,12 @@ import (
 type testNetjsonCoder struct {
 }
 
-func (self *testNetjsonCoder) NetjsonEncode(i interface{}) ([]byte, error) {
+func (self *testNetjsonCoder) NetjsonEncode(v reflect.Value) ([]byte, error) {
 	return nil, nil
 }
 
-func (self *testNetjsonCoder) NetjsonDecode(i interface{}, buf []byte) error {
-	v := reflect.ValueOf(i).Elem()
+func (self *testNetjsonCoder) NetjsonDecode(v reflect.Value, buf []byte) error {
+	v = v.Elem()
 	v.Set(reflect.MakeChan(v.Type(), 0))
 	return nil
 }
